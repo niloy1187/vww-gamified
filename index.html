@@ -1,0 +1,150 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Value WanderWeavers // TACTICAL INTERFACE</title>
+    
+    <!-- LEAFLET -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- TAILWIND & FONTS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              void: '#050505',
+              panel: '#0A0A0A',
+              gold: '#FFD700', 
+              cyan: '#00F0FF',
+              crimson: '#FF2A2A',
+              slate: '#475569'
+            },
+            fontFamily: {
+              hud: ['Orbitron', 'sans-serif'],
+              body: ['Rajdhani', 'sans-serif'], // Primary text font - Highly Legible
+              code: ['Share Tech Mono', 'monospace'],
+            },
+            animation: {
+              'spin-slow': 'spin 12s linear infinite',
+              'reverse-spin': 'reverseSpin 8s linear infinite',
+              'ping-slow': 'ping 3s cubic-bezier(0, 0, 0.2, 1) infinite',
+              'ticker': 'ticker 40s linear infinite',
+              'glitch': 'glitch 1s linear infinite',
+              'fade-in': 'fadeIn 0.5s ease-out',
+              'scan': 'scan 4s linear infinite',
+            },
+            keyframes: {
+              reverseSpin: {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(-360deg)' }
+              },
+              ticker: {
+                '0%': { transform: 'translateX(0)' },
+                '100%': { transform: 'translateX(-50%)' }
+              },
+              glitch: {
+                '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                '62%': { transform: 'translate(0,0) skew(5deg)' }
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' }
+              },
+              scan: {
+                '0%': { transform: 'translateY(-100%)' },
+                '100%': { transform: 'translateY(100%)' }
+              }
+            },
+            backgroundImage: {
+              'grid-pattern': "linear-gradient(to right, #1a1a1a 1px, transparent 1px), linear-gradient(to bottom, #1a1a1a 1px, transparent 1px)",
+              'noise': "url('data:image/svg+xml,%3Csvg viewBox=\"0 0 200 200\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cfilter id=\"noiseFilter\"%3E%3CfeTurbulence type=\"fractalNoise\" baseFrequency=\"0.85\" numOctaves=\"3\" stitchTiles=\"stitch\"/%3E%3C/filter%3E%3Crect width=\"100%\" height=\"100%\" filter=\"url(%23noiseFilter)\" opacity=\"0.4\"/%3E%3C/svg%3E')"
+            }
+          }
+        }
+      }
+    </script>
+
+    <style>
+      body { background: #050505; color: #e2e8f0; overflow: hidden; -webkit-font-smoothing: antialiased; font-size: 16px; line-height: 1.5; }
+      @media (max-width: 768px) { body { font-size: 15px; } }
+
+      /* CRT OVERLAY */
+      .scanlines {
+        background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+        background-size: 100% 4px;
+        position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0.3;
+      }
+      .vignette {
+        background: radial-gradient(circle, transparent 50%, black 100%);
+        position: fixed; inset: 0; pointer-events: none; z-index: 40; opacity: 0.6;
+      }
+      
+      /* SCROLLBAR */
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: #08080A; }
+      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+      ::-webkit-scrollbar-thumb:hover { background: #FFD700; }
+      
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #FFD700; border-radius: 3px; }
+
+      /* GLITCH TEXT */
+      .glitch-text { position: relative; }
+      .glitch-text::before, .glitch-text::after {
+          content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      }
+      .glitch-text::before { left: 2px; text-shadow: -1px 0 #FF2A2A; clip: rect(24px, 550px, 90px, 0); animation: glitch-anim 3s infinite linear alternate-reverse; }
+      .glitch-text::after { left: -2px; text-shadow: -1px 0 #00F0FF; clip: rect(85px, 550px, 140px, 0); animation: glitch-anim 2s infinite linear alternate-reverse; }
+      @keyframes glitch-anim {
+          0% { clip: rect(10px, 9999px, 30px, 0); }
+          20% { clip: rect(80px, 9999px, 100px, 0); }
+          40% { clip: rect(40px, 9999px, 60px, 0); }
+          60% { clip: rect(120px, 9999px, 140px, 0); }
+          100% { clip: rect(0px, 9999px, 20px, 0); }
+      }
+      
+      /* UTILS */
+      .clip-corner { clip-path: polygon(0 0, 100% 0, 100% 85%, 90% 100%, 0 100%); }
+      .shadow-glow { text-shadow: 0 0 10px #00F0FF; }
+      
+      /* Global readability improvements */
+      p, li, span, input, textarea {
+          letter-spacing: 0.02em;
+      }
+      
+      /* Input autofill fix */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus, 
+      input:-webkit-autofill:active{
+          -webkit-box-shadow: 0 0 0 30px #050505 inset !important;
+          -webkit-text-fill-color: white !important;
+          caret-color: white !important;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "leaflet": "https://aistudiocdn.com/leaflet@^1.9.4",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+  </body>
+</html>
